@@ -1,0 +1,14 @@
+dbConfig:
+  host: "localhost"
+  name: "task-distribution-optimizer"
+  user: "task-distribution-optimizer"
+  password: "task-distribution-optimizer"
+  port: 6432
+
+jwtSecret: "harikulade-gizli-key"
+
+serverConfig:
+  port: 3000
+  readTimeout: 30
+  writeTimeout: 30
+  idleTimeout: 120

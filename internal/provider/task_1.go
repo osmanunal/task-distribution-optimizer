@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"taskmanager/internal/model"
-	"taskmanager/internal/port"
+	"task-distribution-optimizer/internal/model"
+	"task-distribution-optimizer/internal/port"
 )
 
 type Provider1 struct {

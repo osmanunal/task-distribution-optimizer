@@ -13,7 +13,7 @@ package migrations
 
 import (
 	"context"
-	"taskmanager/migration"
+	"task-distribution-optimizer/migration"
 
 	"github.com/uptrace/bun"
 )

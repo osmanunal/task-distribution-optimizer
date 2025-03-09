@@ -3,8 +3,8 @@ package migration
 import (
 	"context"
 	"fmt"
-	"taskmanager/pkg/config"
-	"taskmanager/pkg/database"
+	"task-distribution-optimizer/pkg/config"
+	"task-distribution-optimizer/pkg/database"
 
 	"github.com/uptrace/bun/migrate"
 )

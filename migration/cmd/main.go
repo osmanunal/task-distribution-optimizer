@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"os"
-	"taskmanager/migration"
-	_ "taskmanager/migration/migrations"
+	"task-distribution-optimizer/migration"
+	_ "task-distribution-optimizer/migration/migrations"
 
 	"github.com/urfave/cli/v2"
 )

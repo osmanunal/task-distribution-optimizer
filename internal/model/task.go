@@ -1,7 +1,7 @@
 package model
 
 import (
-	"taskmanager/pkg/model"
+	"task-distribution-optimizer/pkg/model"
 )
 
 type Task struct {

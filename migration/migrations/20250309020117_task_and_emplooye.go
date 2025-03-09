@@ -2,8 +2,8 @@ package migrations
 
 import (
 	"context"
-	"taskmanager/migration"
-	"taskmanager/pkg/model"
+	"task-distribution-optimizer/migration"
+	"task-distribution-optimizer/pkg/model"
 
 	"github.com/uptrace/bun"
 )

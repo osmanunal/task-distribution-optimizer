@@ -2,7 +2,7 @@ package port
 
 import (
 	"context"
-	"taskmanager/internal/model"
+	"task-distribution-optimizer/internal/model"
 )
 
 type TaskProvider interface {
