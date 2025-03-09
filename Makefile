@@ -15,5 +15,7 @@ migrate-create:
 	@read -p "Migration açıklaması: " desc; \
 	./scripts/create_migration.sh "$$desc"
 
+sync-start:
+	go run sync/main.go start
 
-.PHONY: devdb migrate-up migrate-down migrate-status migrate-create
+.PHONY: devdb migrate-up migrate-down migrate-status migrate-create sync-schema
