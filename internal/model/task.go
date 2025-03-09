@@ -9,7 +9,7 @@ type Task struct {
 	ExternalID int64  `bun:",notnull"`
 	Name       string `bun:",notnull"`
 	Difficulty int    `bun:",notnull"`
-	Duration   int    `bun:",notnull"`
+	Duration   int    `bun:",notnull"` //hour
 	EmployeeID *int64
 	Employee   Employee `bun:"rel:belongs-to,join:employee_id=id"`
 }

@@ -7,5 +7,8 @@ type Employee struct {
 
 	Name       string `bun:",notnull"`
 	Difficulty int    `bun:",notnull"`
-	Workload   int    `bun:",notnull"`
+}
+
+func (e *Employee) ComputeTaskDuration(task Task) int {
+	return task.Difficulty * task.Duration / e.Difficulty
 }
