@@ -9,8 +9,9 @@ import (
 	"task-distribution-optimizer/internal/port"
 )
 
-type Provider2 struct {
-	URL  string
+const task2URL = "https://raw.githubusercontent.com/WEG-Technology/mock/refs/heads/main/mock-two"
+
+type TaskProvider2 struct {
 	Name string
 }
 
@@ -20,15 +21,14 @@ type Provider2Task struct {
 	Sure   int   `json:"sure"`
 }
 
-func NewProvider2(url string) port.TaskProvider {
-	return &Provider2{
-		URL:  url,
+func NewProvider2() port.TaskProvider {
+	return &TaskProvider2{
 		Name: "provider2",
 	}
 }
 
-func (p *Provider2) GetTasks(ctx context.Context) ([]model.TaskProviderResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.URL, nil)
+func (p *TaskProvider2) GetTasks(ctx context.Context) ([]model.TaskProviderResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, task2URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("provider2 için istek oluştururken hata: %v", err)
 	}

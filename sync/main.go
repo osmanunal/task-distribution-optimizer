@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"task-distribution-optimizer/internal/model"
 	"task-distribution-optimizer/internal/provider"
 	"task-distribution-optimizer/internal/repository"
 	"task-distribution-optimizer/internal/service"
@@ -36,7 +35,7 @@ var commands = []*cli.Command{
 			db := database.ConnectDB(cfg.DBConfig)
 
 			taskRepo := repository.NewTaskRepository(db)
-			taskProvider := provider.NewProvider1("https://raw.githubusercontent.com/WEG-Technofmty/mock/refs/heads/main/mock-one")
+			taskProvider := provider.NewProvider1()
 			syncService := service.NewTaskService(taskProvider, taskRepo, nil)
 
 			fmt.Println("Task senkronizasyonu başlatılıyor...")
@@ -95,51 +94,6 @@ var commands = []*cli.Command{
 			}
 
 			fmt.Println("Görev dağıtımı başarıyla tamamlandı!")
-			return nil
-		},
-	},
-	{
-		Name:  "seed-employees",
-		Usage: "örnek çalışanları veritabanına ekle",
-		Action: func(c *cli.Context) error {
-			ctx := context.Background()
-			cfg := config.Read()
-			db := database.ConnectDB(cfg.DBConfig)
-
-			employeeRepo := repository.NewEmployeeRepository(db)
-
-			employees := []model.Employee{
-				{
-					Name:       "DEV1",
-					Difficulty: 1, // 1x zorluk seviyesi
-				},
-				{
-					Name:       "DEV2",
-					Difficulty: 2, // 2x zorluk seviyesi
-				},
-				{
-					Name:       "DEV3",
-					Difficulty: 3, // 3x zorluk seviyesi
-				},
-				{
-					Name:       "DEV4",
-					Difficulty: 4, // 4x zorluk seviyesi
-				},
-				{
-					Name:       "DEV5",
-					Difficulty: 5, // 5x zorluk seviyesi
-				},
-			}
-
-			fmt.Println("Çalışanlar ekleniyor...")
-			for _, emp := range employees {
-				if err := employeeRepo.CreateEmployee(ctx, emp); err != nil {
-					fmt.Printf("Çalışan eklenirken hata: %v", err)
-					return err
-				}
-			}
-
-			fmt.Println("Çalışanlar başarıyla eklendi!")
 			return nil
 		},
 	},
