@@ -18,4 +18,7 @@ migrate-create:
 sync-start:
 	go run sync/main.go start
 
-.PHONY: devdb migrate-up migrate-down migrate-status migrate-create sync-schema
+plan:
+	go run sync/main.go plan
+
+.PHONY: devdb migrate-up migrate-down migrate-status migrate-create sync-schema plan
