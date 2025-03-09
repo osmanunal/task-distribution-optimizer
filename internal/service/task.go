@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"sort"
+	"sync"
 	"task-distribution-optimizer/internal/model"
 	"task-distribution-optimizer/internal/port"
 	"task-distribution-optimizer/pkg/utils"
@@ -16,7 +17,7 @@ type TaskService struct {
 	employeeRepo port.EmployeeRepository
 }
 
-func NewTaskService(taskProvider port.TaskProvider, taskRepo port.TaskRepository, employeeRepo port.EmployeeRepository) port.TaskSyncService {
+func NewTaskService(taskProvider port.TaskProvider, taskRepo port.TaskRepository, employeeRepo port.EmployeeRepository) port.TaskService {
 	return &TaskService{
 		taskProvider: taskProvider,
 		taskRepo:     taskRepo,
@@ -54,7 +55,6 @@ func (s *TaskService) SyncTasks(ctx context.Context) error {
 func (s *TaskService) TaskPlanner(ctx context.Context) (*port.TaskDistributionResult, error) {
 	const weeklyWorkHours = 45 // Haftalık çalışma saati limiti
 
-	// Görev ve çalışanları getir
 	tasks, err := s.taskRepo.GetAllTasks(ctx)
 	if err != nil {
 		return nil, err
@@ -72,20 +72,15 @@ func (s *TaskService) TaskPlanner(ctx context.Context) (*port.TaskDistributionRe
 		}, nil
 	}
 
-	// Görevleri zorluklarına göre sırala
-	sort.Slice(tasks, func(i, j int) bool {
-		// Her görev için ortalama süreyi hesapla
-		var totalDurationI, totalDurationJ int
-		for _, emp := range employees {
-			totalDurationI += emp.ComputeTaskDuration(tasks[i])
-			totalDurationJ += emp.ComputeTaskDuration(tasks[j])
-		}
-		avgDurationI := float64(totalDurationI) / float64(len(employees))
-		avgDurationJ := float64(totalDurationJ) / float64(len(employees))
-		return avgDurationI > avgDurationJ // Zorları önce ata
+	// Çalışanları ve görevleri zorluk derecesine göre sırala
+	sort.Slice(employees, func(i, j int) bool {
+		return employees[i].Difficulty > employees[j].Difficulty
 	})
 
-	// Çalışan iş yüklerini hazırla
+	sort.Slice(tasks, func(i, j int) bool {
+		return tasks[i].Difficulty > tasks[j].Difficulty
+	})
+
 	workloads := make([]port.EmployeeWorkload, len(employees))
 	for i, emp := range employees {
 		workloads[i] = port.EmployeeWorkload{
@@ -98,57 +93,76 @@ func (s *TaskService) TaskPlanner(ctx context.Context) (*port.TaskDistributionRe
 		}
 	}
 
-	// Her çalışanın toplam süresini takip et
-	completionTimes := make([]int, len(employees))
-
-	// Her görevi en uygun çalışana ata
+	// Görevleri en uygun çalışanlara dağıt
 	for _, task := range tasks {
 		bestEmployeeIndex := -1
-		earliestCompletionTime := math.MaxInt32
+		minTotalHours := math.MaxInt32
+		minTaskDuration := math.MaxInt32
 
-		// Bu görevi en erken tamamlayacak çalışanı bul
-		for empIndex, emp := range employees {
+		for i, emp := range employees {
 			duration := emp.ComputeTaskDuration(task)
-			completionTime := completionTimes[empIndex] + duration
 
-			if completionTime < earliestCompletionTime {
-				earliestCompletionTime = completionTime
-				bestEmployeeIndex = empIndex
+			// Çalışan iş yükü ve görev süresi kombinasyonuna göre en iyi eşleşmeyi bul
+			// İş yükü düşük olanları ve görevi hızlı yapabilenleri tercih et
+			if workloads[i].TotalHours < minTotalHours ||
+				(workloads[i].TotalHours == minTotalHours && duration < minTaskDuration) {
+				minTotalHours = workloads[i].TotalHours
+				minTaskDuration = duration
+				bestEmployeeIndex = i
 			}
 		}
 
-		// En uygun çalışana görevi ata
 		if bestEmployeeIndex != -1 {
-			duration := employees[bestEmployeeIndex].ComputeTaskDuration(task)
+			emp := employees[bestEmployeeIndex]
+			duration := emp.ComputeTaskDuration(task)
 
-			// Çalışanın toplam süresini güncelle
-			completionTimes[bestEmployeeIndex] += duration
-			workloads[bestEmployeeIndex].TotalHours += duration
-
-			// Atamayı kaydet
 			assignment := port.Assignment{
 				TaskID:         task.ID,
 				TaskName:       task.Name,
 				TaskExternalID: task.ExternalID,
 				Duration:       duration,
 			}
+
 			workloads[bestEmployeeIndex].Assignments = append(
 				workloads[bestEmployeeIndex].Assignments,
 				assignment,
 			)
+			workloads[bestEmployeeIndex].TotalHours += duration
 		}
 	}
 
-	// Her çalışanın haftalık planını hesapla
+	// Haftalık planları paralel olarak hesapla
+	var wg sync.WaitGroup
+	maxWeeksCh := make(chan int, len(workloads))
+
 	for i := range workloads {
-		workloads[i].WeeklyPlan = calculateWeeklyPlan(workloads[i].TotalHours, weeklyWorkHours)
+		if workloads[i].TotalHours > 0 {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				workloads[idx].WeeklyPlan = calculateWeeklyPlan(workloads[idx].TotalHours, weeklyWorkHours)
+
+				weeksNeeded := (workloads[idx].TotalHours + weeklyWorkHours - 1) / weeklyWorkHours // ceiling division
+				maxWeeksCh <- weeksNeeded
+			}(i)
+		}
 	}
 
-	// Toplam hafta sayısını hesapla
-	totalWeeks := s.calculateTotalWeeks(workloads, weeklyWorkHours)
+	// Tüm go routine'ler tamamlandığında channel'ı kapat
+	go func() {
+		wg.Wait()
+		close(maxWeeksCh)
+	}()
+
+	maxWeeks := 0
+	for weeks := range maxWeeksCh {
+		if weeks > maxWeeks {
+			maxWeeks = weeks
+		}
+	}
 
 	return &port.TaskDistributionResult{
-		TotalWeeks: totalWeeks,
+		TotalWeeks: maxWeeks,
 		Workloads:  workloads,
 	}, nil
 }
@@ -173,18 +187,4 @@ func calculateWeeklyPlan(totalHours, weeklyWorkHours int) []port.WeeklyWork {
 	}
 
 	return plan
-}
-
-// calculateTotalWeeks, en uzun süren çalışana göre toplam hafta sayısını hesaplar
-func (s *TaskService) calculateTotalWeeks(workloads []port.EmployeeWorkload, weeklyWorkHours int) int {
-	maxWeeks := 0
-
-	for _, workload := range workloads {
-		weeks := (workload.TotalHours + weeklyWorkHours - 1) / weeklyWorkHours // Ceiling division
-		if weeks > maxWeeks {
-			maxWeeks = weeks
-		}
-	}
-
-	return maxWeeks
 }

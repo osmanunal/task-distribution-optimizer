@@ -66,7 +66,6 @@ var commands = []*cli.Command{
 				return err
 			}
 
-			// Sonucu yazdır
 			fmt.Println("En hızlı bitecek atama planı:")
 			fmt.Printf("Toplam süre: %d hafta\n", result.TotalWeeks)
 			fmt.Println("==========================================")

@@ -34,8 +34,8 @@ type TaskDistributionResult struct {
 	Workloads  []EmployeeWorkload
 }
 
-// TaskSyncService, task senkronizasyon servisi için port
-type TaskSyncService interface {
+// TaskService, task senkronizasyon servisi için port
+type TaskService interface {
 	// SyncTasks, görevleri senkronize eder
 	SyncTasks(ctx context.Context) error
 
