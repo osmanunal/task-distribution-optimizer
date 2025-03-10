@@ -4,13 +4,13 @@ services:
   postgres:
     image: postgres:14-alpine
     restart: always
-    container_name: module task-distribution-optimizer
+    container_name: task-distribution-optimizer
     ports:
       - '6432:5432'
     environment:
-      POSTGRES_DB: module task-distribution-optimizer
-      POSTGRES_USER: module task-distribution-optimizer
-      POSTGRES_PASSWORD: module task-distribution-optimizer
+      POSTGRES_DB: task-distribution-optimizer
+      POSTGRES_USER: task-distribution-optimizer
+      POSTGRES_PASSWORD: task-distribution-optimizer
     volumes:
       - postgres:/var/lib/postgresql/data
 
