@@ -12,7 +12,4 @@ type TaskRepository interface {
 
 	// GetAllTasks, tüm task'ları getirir
 	GetAllTasks(ctx context.Context) ([]model.Task, error)
-
-	// MarkTasksAsProcessed, belirtilen task'ları işlenmiş olarak işaretler
-	MarkTasksAsProcessed(ctx context.Context, taskIDs []int64) error
 }

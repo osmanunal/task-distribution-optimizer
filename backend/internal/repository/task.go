@@ -50,21 +50,3 @@ func (r *TaskRepository) GetAllTasks(ctx context.Context) ([]model.Task, error) 
 
 	return tasks, nil
 }
-
-func (r *TaskRepository) MarkTasksAsProcessed(ctx context.Context, taskIDs []int64) error {
-	if len(taskIDs) == 0 {
-		return nil
-	}
-
-	_, err := r.db.NewUpdate().
-		Model(&model.Task{}).
-		Set("processed = ?", true).
-		Where("id IN (?)", bun.In(taskIDs)).
-		Exec(ctx)
-
-	if err != nil {
-		return fmt.Errorf("error marking tasks as processed: %v", err)
-	}
-
-	return nil
-}
