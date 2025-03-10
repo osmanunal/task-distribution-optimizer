@@ -21,4 +21,7 @@ sync-start:
 plan:
 	go run sync/main.go plan
 
-.PHONY: devdb migrate-up migrate-down migrate-status migrate-create sync-schema plan
+add-emp:
+	go run sync/main.go add-emp
+
+.PHONY: devdb migrate-up migrate-down migrate-status migrate-create sync-start plan

@@ -52,24 +52,21 @@ func (s *TaskService) SyncTasks(ctx context.Context) error {
 }
 
 // TaskPlanner, görevleri çalışanlara en uygun şekilde dağıtır ve sonucu döndürür
-func (s *TaskService) TaskPlanner(ctx context.Context) (*port.TaskDistributionResult, error) {
+func (s *TaskService) TaskPlanner(ctx context.Context) (port.TaskDistributionResult, error) {
 	const weeklyWorkHours = 45 // Haftalık çalışma saati limiti
 
 	tasks, err := s.taskRepo.GetAllTasks(ctx)
 	if err != nil {
-		return nil, err
+		return port.TaskDistributionResult{}, err
 	}
 
 	employees, err := s.employeeRepo.GetAllEmployees(ctx)
 	if err != nil {
-		return nil, err
+		return port.TaskDistributionResult{}, err
 	}
 
 	if len(tasks) == 0 || len(employees) == 0 {
-		return &port.TaskDistributionResult{
-			TotalWeeks: 0,
-			Workloads:  []port.EmployeeWorkload{},
-		}, nil
+		return port.TaskDistributionResult{}, err
 	}
 
 	// Çalışanları ve görevleri zorluk derecesine göre sırala
@@ -161,10 +158,12 @@ func (s *TaskService) TaskPlanner(ctx context.Context) (*port.TaskDistributionRe
 		}
 	}
 
-	return &port.TaskDistributionResult{
+	result := port.TaskDistributionResult{
 		TotalWeeks: maxWeeks,
 		Workloads:  workloads,
-	}, nil
+	}
+
+	return result, nil
 }
 
 // calculateWeeklyPlan, toplam saati haftalık plana dönüştürür

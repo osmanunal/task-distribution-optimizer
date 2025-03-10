@@ -40,5 +40,5 @@ type TaskService interface {
 	SyncTasks(ctx context.Context) error
 
 	// TaskPlanner, görevleri çalışanlara planlar ve en optimal dağılımı hesaplar
-	TaskPlanner(ctx context.Context) (*TaskDistributionResult, error)
+	TaskPlanner(ctx context.Context) (TaskDistributionResult, error)
 }

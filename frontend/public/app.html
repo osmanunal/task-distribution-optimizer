@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görev Dağılım Optimizasyonu</title>
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .card-title {
+            display: flex;
+            align-items: center;
+        }
+        .chip {
+            margin-left: 10px;
+        }
+        .tabs .tab a {
+            color: #1976d2;
+        }
+        .tabs .tab a:hover {
+            color: #1976d2;
+        }
+        .tabs .tab a.active {
+            color: #1976d2;
+        }
+        .tabs .indicator {
+            background-color: #1976d2;
+        }
+        .employee-section {
+            margin-top: 30px;
+        }
+        .preloader-wrapper {
+            margin: 50px auto;
+            display: block;
+        }
+        .task-table, .week-table {
+            margin: 20px 0;
+        }
+        .employee-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .employee-name {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .error-message {
+            padding: 20px;
+            background-color: #ffebee;
+            color: #c62828;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 class="center-align">Görev Dağılım Optimizasyonu</h3>
+        
+        <div class="row">
+            <div class="col s12 right-align">
+                <button id="refresh-btn" class="btn waves-effect waves-light">
+                    <i class="material-icons left">refresh</i>Yenile
+                </button>
+            </div>
+        </div>
+        
+        <div id="error-container" class="error-message" style="display: none;"></div>
+        
+        <div id="loading" class="center-align">
+            <div class="preloader-wrapper big active">
+                <div class="spinner-layer spinner-blue-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+            <p>Veriler yükleniyor...</p>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="row">
+                <div class="col s12">
+                    <ul class="tabs">
+                        <li class="tab col s6"><a class="active" href="#employee-view">Çalışan Bazlı Görünüm</a></li>
+                        <li class="tab col s6"><a href="#weekly-view">Haftalık İş Yükü</a></li>
+                    </ul>
+                </div>
+                
+                <div id="employee-view" class="col s12">
+                    <div id="employees-container"></div>
+                </div>
+                
+                <div id="weekly-view" class="col s12">
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title">Haftalık Genel Bakış</span>
+                            <div id="weekly-overview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Materialize bileşenlerini başlat
+            const tabs = document.querySelectorAll('.tabs');
+            M.Tabs.init(tabs);
+            
+            // DOM elementlerini al
+            const refreshBtn = document.getElementById('refresh-btn');
+            const loadingElement = document.getElementById('loading');
+            const contentElement = document.getElementById('content');
+            const employeesContainer = document.getElementById('employees-container');
+            const weeklyOverview = document.getElementById('weekly-overview');
+            const errorContainer = document.getElementById('error-container');
+            
+            // API URL'i
+            const API_URL = 'http://localhost:3000';
+            
+            // Verileri yükle
+            fetchData();
+            
+            // Yenile butonuna tıklandığında
+            refreshBtn.addEventListener('click', fetchData);
+            
+            // API'den verileri al
+            function fetchData() {
+                setLoading(true);
+                hideError();
+                
+                // Localhost'tan API verilerini al - mutlak URL kullan
+                fetch(`${API_URL}/api/tasks/plan`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors' // CORS etkinleştir
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Sunucu ile iletişim kurulamadı. Lütfen daha sonra tekrar deneyin.');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('API yanıtı:', data);
+                        renderData(data);
+                        setLoading(false);
+                    })
+                    .catch(error => {
+                        console.error('API hatası:', error);
+                        showError(error.message);
+                        setLoading(false);
+                    });
+            }
+            
+            // Yükleniyor durumunu ayarla
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    loadingElement.style.display = 'block';
+                    contentElement.style.display = 'none';
+                } else {
+                    loadingElement.style.display = 'none';
+                    contentElement.style.display = 'block';
+                }
+            }
+            
+            // Hata mesajını göster
+            function showError(message) {
+                errorContainer.textContent = message;
+                errorContainer.style.display = 'block';
+            }
+            
+            // Hata mesajını gizle
+            function hideError() {
+                errorContainer.style.display = 'none';
+            }
+            
+            // Verileri görüntüle
+            function renderData(data) {
+                if (!data || !data.workloads || data.workloads.length === 0) {
+                    showError('Görev dağılımı verisi bulunamadı');
+                    return;
+                }
+                
+                // Çalışan görünümünü oluştur
+                renderEmployeeView(data);
+                
+                // Haftalık görünümü oluştur
+                renderWeeklyView(data);
+            }
+            
+            // Çalışan görünümünü oluştur
+            function renderEmployeeView(data) {
+                employeesContainer.innerHTML = '';
+                
+                data.workloads.forEach(employee => {
+                    const employeeCard = document.createElement('div');
+                    employeeCard.className = 'card employee-section';
+                    
+                    // Çalışan başlığı
+                    const header = document.createElement('div');
+                    header.className = 'card-content';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'card-title employee-header';
+                    
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'employee-name';
+                    nameDiv.textContent = employee.employee_name;
+                    
+                    const chipContainer = document.createElement('div');
+                    
+                    const hoursChip = document.createElement('div');
+                    hoursChip.className = 'chip blue white-text';
+                    hoursChip.textContent = `${employee.total_hours} saat`;
+                    
+                    const difficultyChip = document.createElement('div');
+                    difficultyChip.className = 'chip red white-text';
+                    difficultyChip.textContent = `Zorluk: ${employee.difficulty}`;
+                    
+                    chipContainer.appendChild(hoursChip);
+                    chipContainer.appendChild(difficultyChip);
+                    
+                    title.appendChild(nameDiv);
+                    title.appendChild(chipContainer);
+                    header.appendChild(title);
+                    
+                    // Görev tablosu
+                    const tasksSection = document.createElement('div');
+                    tasksSection.className = 'card-content';
+                    
+                    const tasksTitle = document.createElement('h6');
+                    tasksTitle.textContent = 'Atanan Görevler';
+                    tasksSection.appendChild(tasksTitle);
+                    
+                    if (employee.assignments && employee.assignments.length > 0) {
+                        const tasksTable = document.createElement('table');
+                        tasksTable.className = 'striped task-table';
+                        
+                        const tasksThead = document.createElement('thead');
+                        tasksThead.innerHTML = `
+                            <tr>
+                                <th>Görev ID</th>
+                                <th>Görev Adı</th>
+                                <th>Dış ID</th>
+                                <th>Süre (Saat)</th>
+                            </tr>
+                        `;
+                        
+                        const tasksTbody = document.createElement('tbody');
+                        
+                        employee.assignments.forEach(task => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${task.task_id}</td>
+                                <td>${task.task_name}</td>
+                                <td>${task.task_external_id}</td>
+                                <td>${task.duration}</td>
+                            `;
+                            tasksTbody.appendChild(row);
+                        });
+                        
+                        tasksTable.appendChild(tasksThead);
+                        tasksTable.appendChild(tasksTbody);
+                        tasksSection.appendChild(tasksTable);
+                    } else {
+                        const noTasks = document.createElement('p');
+                        noTasks.textContent = 'Atanmış görev bulunamadı';
+                        tasksSection.appendChild(noTasks);
+                    }
+                    
+                    // Haftalık plan tablosu
+                    const weeklySection = document.createElement('div');
+                    weeklySection.className = 'card-content';
+                    
+                    const weeklyTitle = document.createElement('h6');
+                    weeklyTitle.textContent = 'Haftalık Plan';
+                    weeklySection.appendChild(weeklyTitle);
+                    
+                    if (employee.weekly_plan && employee.weekly_plan.length > 0) {
+                        const weeklyTable = document.createElement('table');
+                        weeklyTable.className = 'striped week-table';
+                        
+                        const weeklyThead = document.createElement('thead');
+                        weeklyThead.innerHTML = `
+                            <tr>
+                                <th>Hafta No</th>
+                                <th>Çalışma Saati</th>
+                            </tr>
+                        `;
+                        
+                        const weeklyTbody = document.createElement('tbody');
+                        
+                        employee.weekly_plan.forEach(week => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${week.week_number}</td>
+                                <td>${week.hours}</td>
+                            `;
+                            weeklyTbody.appendChild(row);
+                        });
+                        
+                        weeklyTable.appendChild(weeklyThead);
+                        weeklyTable.appendChild(weeklyTbody);
+                        weeklySection.appendChild(weeklyTable);
+                    } else {
+                        const noWeeks = document.createElement('p');
+                        noWeeks.textContent = 'Haftalık plan bulunamadı';
+                        weeklySection.appendChild(noWeeks);
+                    }
+                    
+                    employeeCard.appendChild(header);
+                    employeeCard.appendChild(tasksSection);
+                    employeeCard.appendChild(weeklySection);
+                    
+                    employeesContainer.appendChild(employeeCard);
+                });
+            }
+            
+            // Haftalık görünümü oluştur
+            function renderWeeklyView(data) {
+                weeklyOverview.innerHTML = '';
+                
+                const totalWeeks = document.createElement('p');
+                totalWeeks.textContent = `Toplam ${data.total_weeks} haftalık plan`;
+                weeklyOverview.appendChild(totalWeeks);
+                
+                // Veri kontrolü ve debug için
+                console.log('Toplam hafta sayısı:', data.total_weeks);
+                console.log('Çalışan sayısı:', data.workloads ? data.workloads.length : 0);
+            }
+        });
+    </script>
+</body>
+</html> 

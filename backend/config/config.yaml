@@ -9,6 +9,6 @@ jwtSecret: "harikulade-gizli-key"
 
 serverConfig:
   port: 3000
-  readTimeout: 30
-  writeTimeout: 30
-  idleTimeout: 120
+  readTimeout: 10
+  writeTimeout: 10
+  idleTimeout: 5

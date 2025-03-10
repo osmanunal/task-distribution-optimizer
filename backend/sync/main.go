@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"task-distribution-optimizer/internal/model"
 	"task-distribution-optimizer/internal/provider"
 	"task-distribution-optimizer/internal/repository"
 	"task-distribution-optimizer/internal/service"
@@ -93,6 +94,36 @@ var commands = []*cli.Command{
 			}
 
 			fmt.Println("Görev dağıtımı başarıyla tamamlandı!")
+			return nil
+		},
+	},
+	{
+		Name:  "add-emp",
+		Usage: "çalışanları ekle",
+		Action: func(c *cli.Context) error {
+			ctx := context.Background()
+			cfg := config.Read()
+			db := database.ConnectDB(cfg.DBConfig)
+
+			employeeRepo := repository.NewEmployeeRepository(db)
+
+			employees := []model.Employee{
+				{Name: "DEV1", Difficulty: 1},
+				{Name: "DEV2", Difficulty: 2},
+				{Name: "DEV3", Difficulty: 3},
+				{Name: "DEV4", Difficulty: 4},
+				{Name: "DEV5", Difficulty: 5},
+			}
+
+			for _, emp := range employees {
+				if err := employeeRepo.CreateEmployee(ctx, emp); err != nil {
+					fmt.Printf("Çalışan eklenirken hata oluştu %s: %v\n", emp.Name, err)
+					return err
+				}
+				fmt.Printf("Çalışan eklendi: %s (Zorluk: %dx)\n", emp.Name, emp.Difficulty)
+			}
+
+			fmt.Println("Tüm çalışanlar başarıyla eklendi!")
 			return nil
 		},
 	},

@@ -26,7 +26,7 @@ func (r *TaskRepository) UpsertTasks(ctx context.Context, tasks []model.Task) er
 
 	_, err := r.db.NewInsert().
 		Model(&tasks).
-		On("CONFLICT (external_id) DO UPDATE").
+		On("CONFLICT (name, external_id) DO UPDATE").
 		Exec(ctx)
 
 	if err != nil {

@@ -13,7 +13,6 @@ type Employee struct {
 
 	Name       string `bun:",notnull"`
 	Difficulty int    `bun:",notnull"`
-	Workload   int    `bun:",notnull"`
 }
 
 type Task struct {
@@ -46,9 +45,9 @@ func init() {
 				}
 			}
 
-			_, err = tx.NewCreateIndex().Model(&Task{}).Unique().Column("external_id").
-				Index("idx_task_external_id").Exec(ctx)
-			return nil
+			_, err = tx.NewCreateIndex().Model(&Task{}).Unique().Column("name", "external_id").
+				Index("idx_task_name_external_id").Exec(ctx)
+			return err
 		})
 	}
 
